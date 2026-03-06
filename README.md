@@ -102,6 +102,31 @@ This is the easiest path if you are new to Bicep/Azure IaC.
 
 Use this option if you prefer terminal commands.
 
+### Step 0 - Get your own local copy of this repository
+
+Choose one of the following:
+
+- **Fork + clone (best if you want to keep your own version on GitHub):**
+  1. Click **Fork** on the GitHub page.
+  2. Clone your fork:
+
+```powershell
+git clone https://github.com/<your-github-user>/fabric-network-security-quickstart.git
+cd fabric-network-security-quickstart
+```
+
+- **Clone this repo directly (quickest):**
+
+```powershell
+git clone https://github.com/alexumanamonge/fabric-network-security-quickstart.git
+cd fabric-network-security-quickstart
+```
+
+- **Download ZIP (no git needed):**
+  1. Click **Code** > **Download ZIP**.
+  2. Extract the ZIP.
+  3. Open a terminal in the extracted folder.
+
 ### Step 1 - Sign in and choose subscription
 
 ```powershell
