@@ -1,0 +1,8 @@
+# Bicep
+**/*.json
+!infra/main.json
+
+# Local settings
+.env
+*.user
+*.log

@@ -1,0 +1,39 @@
+flowchart LR
+  subgraph RGH[Hub Resource Group - <your-prefix>-demo-hub-rg]
+    HUBVNET[Hub VNet\n<your-prefix>-demo-hub-vnet]
+    GWSUB[GatewaySubnet\nReserved]
+    FWSUB[AzureFirewallSubnet\nReserved]
+    BASTIONSUB[AzureBastionSubnet]
+    JUMPSUB[snet-jumpbox]
+    BASTION[Azure Bastion]
+    NAT[NAT Gateway + Public IP]
+    DNS[Private DNS Zones]
+    WSPLS[Fabric Workspace Private Link Service]
+  end
+
+  subgraph RGS[Spoke Resource Group - <your-prefix>-demo-spk-rg]
+    SPOKEVNET[Spoke VNet\n<your-prefix>-demo-fab-vnet]
+    FABSUB[snet-fabric]
+    PESUB[snet-private-endpoints]
+    WSPE[Private Endpoint\nworkspace]
+  end
+
+  subgraph RGJ[Jumpbox Resource Group - <your-prefix>-demo-jmp-rg]
+    VM[Windows Jumpbox VM\nNo Public IP]
+    NIC[NIC]
+  end
+
+  HUBVNET --- SPOKEVNET
+  BASTION --> BASTIONSUB
+  VM --> NIC --> JUMPSUB
+  JUMPSUB --> NAT
+  DNS -. linked .-> HUBVNET
+  DNS -. linked .-> SPOKEVNET
+  WSPE --> WSPLS
+  WSPE -. DNS zone group .-> DNS
+  HUBVNET --> GWSUB
+  HUBVNET --> FWSUB
+  HUBVNET --> BASTIONSUB
+  HUBVNET --> JUMPSUB
+  SPOKEVNET --> FABSUB
+  SPOKEVNET --> PESUB

@@ -1,0 +1,1626 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "1536470578847072662"
+    }
+  },
+  "parameters": {
+    "projectPrefix": {
+      "type": "string",
+      "defaultValue": "yourprefix-demo",
+      "metadata": {
+        "description": "Project naming prefix. Suggested pattern: <your-prefix>-demo."
+      }
+    },
+    "hubLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Hub region (for hub vNet, Bastion, and jumpbox)."
+      }
+    },
+    "spokeLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Spoke region (for Fabric networking vNet)."
+      }
+    },
+    "hubRgName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-hub-rg', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Hub resource group name."
+      }
+    },
+    "spokeRgName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-spk-rg', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Spoke resource group name."
+      }
+    },
+    "jumpboxRgName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-jmp-rg', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Jumpbox resource group name."
+      }
+    },
+    "hubSubscriptionId": {
+      "type": "string",
+      "defaultValue": "[subscription().subscriptionId]",
+      "metadata": {
+        "description": "Hub subscription ID. Keep equal to current subscription for v1."
+      }
+    },
+    "spokeSubscriptionId": {
+      "type": "string",
+      "defaultValue": "[subscription().subscriptionId]",
+      "metadata": {
+        "description": "Spoke subscription ID. Keep equal to current subscription for v1."
+      }
+    },
+    "jumpboxSubscriptionId": {
+      "type": "string",
+      "defaultValue": "[subscription().subscriptionId]",
+      "metadata": {
+        "description": "Jumpbox subscription ID. Keep equal to current subscription for v1."
+      }
+    },
+    "hubVnetName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-hub-vnet', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Hub vNet name."
+      }
+    },
+    "hubVnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.0/16",
+      "metadata": {
+        "description": "Hub vNet CIDR range."
+      }
+    },
+    "gatewaySubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.0/27",
+      "metadata": {
+        "description": "Gateway subnet CIDR (reserved only in v1)."
+      }
+    },
+    "firewallSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.0.64/26",
+      "metadata": {
+        "description": "Azure Firewall subnet CIDR (reserved only in v1)."
+      }
+    },
+    "bastionSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.1.0/26",
+      "metadata": {
+        "description": "Azure Bastion subnet CIDR."
+      }
+    },
+    "jumpboxSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.10.2.0/24",
+      "metadata": {
+        "description": "Jumpbox subnet CIDR."
+      }
+    },
+    "spokeVnetName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-fab-vnet', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Spoke vNet name."
+      }
+    },
+    "spokeVnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.20.0.0/16",
+      "metadata": {
+        "description": "Spoke vNet CIDR range."
+      }
+    },
+    "fabricSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.20.1.0/24",
+      "metadata": {
+        "description": "Fabric subnet CIDR."
+      }
+    },
+    "privateEndpointsSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.20.2.0/24",
+      "metadata": {
+        "description": "Private Endpoints subnet CIDR placeholder."
+      }
+    },
+    "privateDnsZoneNames": {
+      "type": "array",
+      "defaultValue": [
+        "privatelink.fabric.microsoft.com"
+      ],
+      "metadata": {
+        "description": "Private DNS zones to create and link to hub and spoke vNets. Update as needed for your Fabric scenario."
+      }
+    },
+    "deployBastion": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy Azure Bastion in hub vNet."
+      }
+    },
+    "deployJumpbox": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy jumpbox VM in hub region, in dedicated jumpbox resource group."
+      }
+    },
+    "deployJumpboxNatGateway": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy NAT Gateway for outbound internet access from jumpbox subnet."
+      }
+    },
+    "deployWorkspacePrivateLink": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Deploy workspace-level Fabric private link resources."
+      }
+    },
+    "jumpboxVmName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-jmp-vm', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Jumpbox VM name."
+      }
+    },
+    "jumpboxNatGatewayName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-jmp-ngw', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "NAT Gateway name for jumpbox subnet egress."
+      }
+    },
+    "jumpboxNatPublicIpName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-jmp-ngw-pip', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Public IP name for jumpbox NAT Gateway."
+      }
+    },
+    "fabricWorkspacePrivateLinkServiceName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-fabric-ws-pls', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Name of Microsoft.Fabric/privateLinkServicesForFabric resource for workspace-level private link."
+      }
+    },
+    "fabricWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Fabric workspace ID (GUID) for workspace-level private link service."
+      }
+    },
+    "fabricWorkspacePrivateEndpointName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-fabric-ws-pls-pe', parameters('projectPrefix'))]",
+      "metadata": {
+        "description": "Name of private endpoint for workspace-level Fabric private link."
+      }
+    },
+    "jumpboxAdminUsername": {
+      "type": "string",
+      "defaultValue": "azureuser",
+      "metadata": {
+        "description": "Jumpbox admin username."
+      }
+    },
+    "jumpboxAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Jumpbox admin password (Windows VM)."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-hub-rg",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('hubRgName')]"
+          },
+          "location": {
+            "value": "[parameters('hubLocation')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "13805248659583886268"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource group name."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the resource group."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]"
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "id": {
+              "type": "string",
+              "value": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('name'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-spoke-rg",
+      "subscriptionId": "[parameters('spokeSubscriptionId')]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('spokeRgName')]"
+          },
+          "location": {
+            "value": "[parameters('spokeLocation')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "13805248659583886268"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource group name."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the resource group."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]"
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "id": {
+              "type": "string",
+              "value": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('name'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-jumpbox-rg",
+      "subscriptionId": "[parameters('jumpboxSubscriptionId')]",
+      "location": "[deployment().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('jumpboxRgName')]"
+          },
+          "location": {
+            "value": "[parameters('hubLocation')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "13805248659583886268"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource group name."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for the resource group."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Resources/resourceGroups",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]"
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "id": {
+              "type": "string",
+              "value": "[subscriptionResourceId('Microsoft.Resources/resourceGroups', parameters('name'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[parameters('deployJumpboxNatGateway')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-jumpbox-nat-gateway",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "resourceGroup": "[parameters('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('hubLocation')]"
+          },
+          "natGatewayName": {
+            "value": "[parameters('jumpboxNatGatewayName')]"
+          },
+          "publicIpName": {
+            "value": "[parameters('jumpboxNatPublicIpName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "12608406124923960866"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for NAT Gateway resources."
+              }
+            },
+            "natGatewayName": {
+              "type": "string",
+              "metadata": {
+                "description": "NAT Gateway name."
+              }
+            },
+            "publicIpName": {
+              "type": "string",
+              "metadata": {
+                "description": "Public IP name used by NAT Gateway."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('publicIpName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard"
+              },
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              }
+            },
+            {
+              "type": "Microsoft.Network/natGateways",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('natGatewayName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard"
+              },
+              "properties": {
+                "publicIpAddresses": [
+                  {
+                    "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+                  }
+                ],
+                "idleTimeoutInMinutes": 10
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "natGatewayId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/natGateways', parameters('natGatewayName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId(parameters('hubSubscriptionId'), 'Microsoft.Resources/deployments', 'deploy-hub-rg')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-hub-network",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "resourceGroup": "[parameters('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('hubLocation')]"
+          },
+          "vnetName": {
+            "value": "[parameters('hubVnetName')]"
+          },
+          "vnetAddressPrefix": {
+            "value": "[parameters('hubVnetAddressPrefix')]"
+          },
+          "gatewaySubnetPrefix": {
+            "value": "[parameters('gatewaySubnetPrefix')]"
+          },
+          "firewallSubnetPrefix": {
+            "value": "[parameters('firewallSubnetPrefix')]"
+          },
+          "bastionSubnetPrefix": {
+            "value": "[parameters('bastionSubnetPrefix')]"
+          },
+          "jumpboxSubnetPrefix": {
+            "value": "[parameters('jumpboxSubnetPrefix')]"
+          },
+          "jumpboxNatGatewayId": "[if(parameters('deployJumpboxNatGateway'), createObject('value', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-jumpbox-nat-gateway'), '2025-04-01').outputs.natGatewayId.value), createObject('value', ''))]",
+          "reserveGatewaySubnet": {
+            "value": true
+          },
+          "reserveFirewallSubnet": {
+            "value": true
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "8850817976420291034"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for hub network resources."
+              }
+            },
+            "vnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Hub vNet name."
+              }
+            },
+            "vnetAddressPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Hub vNet CIDR range."
+              }
+            },
+            "reserveGatewaySubnet": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Reserve GatewaySubnet for future gateway deployment."
+              }
+            },
+            "reserveFirewallSubnet": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Reserve AzureFirewallSubnet for future firewall deployment."
+              }
+            },
+            "gatewaySubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Gateway subnet CIDR."
+              }
+            },
+            "firewallSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Firewall subnet CIDR."
+              }
+            },
+            "bastionSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure Bastion subnet CIDR."
+              }
+            },
+            "jumpboxSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Jumpbox subnet CIDR."
+              }
+            },
+            "jumpboxNatGatewayId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional NAT Gateway resource ID to associate to jumpbox subnet for outbound internet access."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('vnetAddressPrefix')]"
+                  ]
+                },
+                "subnets": "[concat(if(parameters('reserveGatewaySubnet'), createArray(createObject('name', 'GatewaySubnet', 'properties', createObject('addressPrefix', parameters('gatewaySubnetPrefix')))), createArray()), if(parameters('reserveFirewallSubnet'), createArray(createObject('name', 'AzureFirewallSubnet', 'properties', createObject('addressPrefix', parameters('firewallSubnetPrefix')))), createArray()), createArray(createObject('name', 'AzureBastionSubnet', 'properties', createObject('addressPrefix', parameters('bastionSubnetPrefix'))), createObject('name', 'snet-jumpbox', 'properties', union(createObject('addressPrefix', parameters('jumpboxSubnetPrefix')), if(empty(parameters('jumpboxNatGatewayId')), createObject(), createObject('natGateway', createObject('id', parameters('jumpboxNatGatewayId'))))))))]"
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "jumpboxSubnetId": {
+              "type": "string",
+              "value": "[format('{0}/subnets/snet-jumpbox', resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId(parameters('hubSubscriptionId'), 'Microsoft.Resources/deployments', 'deploy-hub-rg')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-jumpbox-nat-gateway')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-spoke-network",
+      "subscriptionId": "[parameters('spokeSubscriptionId')]",
+      "resourceGroup": "[parameters('spokeRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('spokeLocation')]"
+          },
+          "vnetName": {
+            "value": "[parameters('spokeVnetName')]"
+          },
+          "vnetAddressPrefix": {
+            "value": "[parameters('spokeVnetAddressPrefix')]"
+          },
+          "fabricSubnetPrefix": {
+            "value": "[parameters('fabricSubnetPrefix')]"
+          },
+          "privateEndpointsSubnetPrefix": {
+            "value": "[parameters('privateEndpointsSubnetPrefix')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "18085116619997758885"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for spoke network resources."
+              }
+            },
+            "vnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Spoke vNet name."
+              }
+            },
+            "vnetAddressPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Spoke vNet CIDR range."
+              }
+            },
+            "fabricSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Fabric subnet CIDR."
+              }
+            },
+            "privateEndpointsSubnetPrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "Private Endpoints subnet CIDR placeholder."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "[parameters('vnetAddressPrefix')]"
+                  ]
+                },
+                "subnets": [
+                  {
+                    "name": "snet-fabric",
+                    "properties": {
+                      "addressPrefix": "[parameters('fabricSubnetPrefix')]"
+                    }
+                  },
+                  {
+                    "name": "snet-private-endpoints",
+                    "properties": {
+                      "addressPrefix": "[parameters('privateEndpointsSubnetPrefix')]",
+                      "privateEndpointNetworkPolicies": "Disabled"
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "vnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]"
+            },
+            "privateEndpointsSubnetId": {
+              "type": "string",
+              "value": "[format('{0}/subnets/snet-private-endpoints', resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId(parameters('spokeSubscriptionId'), 'Microsoft.Resources/deployments', 'deploy-spoke-rg')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-hub-to-spoke-peering",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "resourceGroup": "[parameters('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "localVnetName": {
+            "value": "[parameters('hubVnetName')]"
+          },
+          "remoteVnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network'), '2025-04-01').outputs.vnetId.value]"
+          },
+          "peeringName": {
+            "value": "[format('{0}-hub-to-spk', parameters('projectPrefix'))]"
+          },
+          "allowGatewayTransit": {
+            "value": true
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "707201060255233910"
+            }
+          },
+          "parameters": {
+            "localVnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the local virtual network in this resource group."
+              }
+            },
+            "remoteVnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of remote virtual network."
+              }
+            },
+            "peeringName": {
+              "type": "string",
+              "metadata": {
+                "description": "Peering resource name."
+              }
+            },
+            "allowVirtualNetworkAccess": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "allowForwardedTraffic": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "allowGatewayTransit": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "useRemoteGateways": {
+              "type": "bool",
+              "defaultValue": false
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}', parameters('localVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('remoteVnetId')]"
+                },
+                "allowVirtualNetworkAccess": "[parameters('allowVirtualNetworkAccess')]",
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]"
+              }
+            }
+          ],
+          "outputs": {
+            "peeringId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[0], split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[1])]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-spoke-to-hub-peering",
+      "subscriptionId": "[parameters('spokeSubscriptionId')]",
+      "resourceGroup": "[parameters('spokeRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "localVnetName": {
+            "value": "[parameters('spokeVnetName')]"
+          },
+          "remoteVnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network'), '2025-04-01').outputs.vnetId.value]"
+          },
+          "peeringName": {
+            "value": "[format('{0}-spk-to-hub', parameters('projectPrefix'))]"
+          },
+          "useRemoteGateways": {
+            "value": false
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "707201060255233910"
+            }
+          },
+          "parameters": {
+            "localVnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the local virtual network in this resource group."
+              }
+            },
+            "remoteVnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of remote virtual network."
+              }
+            },
+            "peeringName": {
+              "type": "string",
+              "metadata": {
+                "description": "Peering resource name."
+              }
+            },
+            "allowVirtualNetworkAccess": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "allowForwardedTraffic": {
+              "type": "bool",
+              "defaultValue": true
+            },
+            "allowGatewayTransit": {
+              "type": "bool",
+              "defaultValue": false
+            },
+            "useRemoteGateways": {
+              "type": "bool",
+              "defaultValue": false
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}', parameters('localVnetName'), parameters('peeringName'))]",
+              "properties": {
+                "remoteVirtualNetwork": {
+                  "id": "[parameters('remoteVnetId')]"
+                },
+                "allowVirtualNetworkAccess": "[parameters('allowVirtualNetworkAccess')]",
+                "allowForwardedTraffic": "[parameters('allowForwardedTraffic')]",
+                "allowGatewayTransit": "[parameters('allowGatewayTransit')]",
+                "useRemoteGateways": "[parameters('useRemoteGateways')]"
+              }
+            }
+          ],
+          "outputs": {
+            "peeringId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/virtualNetworkPeerings', split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[0], split(format('{0}/{1}', parameters('localVnetName'), parameters('peeringName')), '/')[1])]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-to-spoke-peering')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-private-dns",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "resourceGroup": "[parameters('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "zoneNames": {
+            "value": "[parameters('privateDnsZoneNames')]"
+          },
+          "virtualNetworkIds": {
+            "value": [
+              "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network'), '2025-04-01').outputs.vnetId.value]",
+              "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network'), '2025-04-01').outputs.vnetId.value]"
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "16113697003066318081"
+            }
+          },
+          "parameters": {
+            "zoneNames": {
+              "type": "array",
+              "metadata": {
+                "description": "Private DNS zone names."
+              }
+            },
+            "virtualNetworkIds": {
+              "type": "array",
+              "metadata": {
+                "description": "Virtual network IDs to link to each private DNS zone."
+              }
+            }
+          },
+          "resources": [
+            {
+              "copy": {
+                "name": "zones",
+                "count": "[length(parameters('zoneNames'))]"
+              },
+              "type": "Microsoft.Network/privateDnsZones",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('zoneNames')[copyIndex()]]",
+              "location": "global"
+            },
+            {
+              "copy": {
+                "name": "hubLinks",
+                "count": "[length(parameters('zoneNames'))]"
+              },
+              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/link-1', parameters('zoneNames')[copyIndex()])]",
+              "location": "global",
+              "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                  "id": "[parameters('virtualNetworkIds')[0]]"
+                }
+              },
+              "dependsOn": [
+                "zones"
+              ]
+            },
+            {
+              "copy": {
+                "name": "spokeLinks",
+                "count": "[length(parameters('zoneNames'))]"
+              },
+              "condition": "[greater(length(parameters('virtualNetworkIds')), 1)]",
+              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/link-2', parameters('zoneNames')[copyIndex()])]",
+              "location": "global",
+              "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                  "id": "[parameters('virtualNetworkIds')[1]]"
+                }
+              },
+              "dependsOn": [
+                "zones"
+              ]
+            }
+          ],
+          "outputs": {
+            "zoneIds": {
+              "type": "array",
+              "copy": {
+                "count": "[length(parameters('zoneNames'))]",
+                "input": "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneNames')[copyIndex()])]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-to-spoke-peering')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-to-hub-peering')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployWorkspacePrivateLink')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-fabric-workspace-private-link-service",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "resourceGroup": "[parameters('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('fabricWorkspacePrivateLinkServiceName')]"
+          },
+          "tenantId": {
+            "value": "[tenant().tenantId]"
+          },
+          "workspaceId": {
+            "value": "[parameters('fabricWorkspaceId')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "12902927755955437328"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Fabric private link service resource for workspace-level private access."
+              }
+            },
+            "tenantId": {
+              "type": "string",
+              "metadata": {
+                "description": "Microsoft Entra tenant ID to associate with this private link service."
+              }
+            },
+            "workspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Fabric workspace ID (GUID) for workspace-level private link service."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Fabric/privateLinkServicesForFabric",
+              "apiVersion": "2024-06-01",
+              "name": "[parameters('name')]",
+              "location": "global",
+              "properties": {
+                "tenantId": "[parameters('tenantId')]",
+                "workspaceId": "[parameters('workspaceId')]"
+              }
+            }
+          ],
+          "outputs": {
+            "privateLinkServiceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Fabric/privateLinkServicesForFabric', parameters('name'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId(parameters('hubSubscriptionId'), 'Microsoft.Resources/deployments', 'deploy-hub-rg')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployBastion')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-bastion",
+      "subscriptionId": "[parameters('hubSubscriptionId')]",
+      "resourceGroup": "[parameters('hubRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('hubLocation')]"
+          },
+          "vnetName": {
+            "value": "[parameters('hubVnetName')]"
+          },
+          "bastionName": {
+            "value": "[format('{0}-bst', parameters('projectPrefix'))]"
+          },
+          "publicIpName": {
+            "value": "[format('{0}-bst-pip', parameters('projectPrefix'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "2783670110145367231"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for Bastion resources."
+              }
+            },
+            "vnetName": {
+              "type": "string",
+              "metadata": {
+                "description": "Hub vNet name that contains AzureBastionSubnet."
+              }
+            },
+            "bastionName": {
+              "type": "string",
+              "metadata": {
+                "description": "Bastion resource name."
+              }
+            },
+            "publicIpName": {
+              "type": "string",
+              "metadata": {
+                "description": "Public IP resource name for Bastion."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('publicIpName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard"
+              },
+              "properties": {
+                "publicIPAllocationMethod": "Static"
+              }
+            },
+            {
+              "type": "Microsoft.Network/bastionHosts",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('bastionName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Basic"
+              },
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "bastionIpConfig",
+                    "properties": {
+                      "subnet": {
+                        "id": "[format('{0}/subnets/AzureBastionSubnet', resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName')))]"
+                      },
+                      "publicIPAddress": {
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "bastionId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/bastionHosts', parameters('bastionName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployJumpbox')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-jumpbox",
+      "subscriptionId": "[parameters('jumpboxSubscriptionId')]",
+      "resourceGroup": "[parameters('jumpboxRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('hubLocation')]"
+          },
+          "vmName": {
+            "value": "[parameters('jumpboxVmName')]"
+          },
+          "adminUsername": {
+            "value": "[parameters('jumpboxAdminUsername')]"
+          },
+          "adminPassword": {
+            "value": "[parameters('jumpboxAdminPassword')]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network'), '2025-04-01').outputs.jumpboxSubnetId.value]"
+          },
+          "nicName": {
+            "value": "[format('{0}-jmp-nic', parameters('projectPrefix'))]"
+          },
+          "osDiskName": {
+            "value": "[format('{0}-jmp-os', parameters('projectPrefix'))]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "4044042075373685117"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Azure region for jumpbox resources."
+              }
+            },
+            "vmName": {
+              "type": "string",
+              "metadata": {
+                "description": "Jumpbox VM name."
+              }
+            },
+            "nicName": {
+              "type": "string",
+              "metadata": {
+                "description": "NIC name for jumpbox VM."
+              }
+            },
+            "osDiskName": {
+              "type": "string",
+              "metadata": {
+                "description": "OS disk name for jumpbox VM."
+              }
+            },
+            "adminUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "Admin username for jumpbox VM."
+              }
+            },
+            "adminPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Admin password for jumpbox VM."
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet resource ID for jumpbox NIC."
+              }
+            },
+            "vmSize": {
+              "type": "string",
+              "defaultValue": "Standard_B2s",
+              "metadata": {
+                "description": "Jumpbox VM size."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkInterfaces",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('nicName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "ipConfigurations": [
+                  {
+                    "name": "ipconfig1",
+                    "properties": {
+                      "subnet": {
+                        "id": "[parameters('subnetId')]"
+                      },
+                      "privateIPAllocationMethod": "Dynamic"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Compute/virtualMachines",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('vmName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "hardwareProfile": {
+                  "vmSize": "[parameters('vmSize')]"
+                },
+                "osProfile": {
+                  "computerName": "[parameters('vmName')]",
+                  "adminUsername": "[parameters('adminUsername')]",
+                  "adminPassword": "[parameters('adminPassword')]",
+                  "windowsConfiguration": {
+                    "enableAutomaticUpdates": true,
+                    "provisionVMAgent": true
+                  }
+                },
+                "storageProfile": {
+                  "imageReference": {
+                    "publisher": "MicrosoftWindowsServer",
+                    "offer": "WindowsServer",
+                    "sku": "2022-datacenter-azure-edition",
+                    "version": "latest"
+                  },
+                  "osDisk": {
+                    "name": "[parameters('osDiskName')]",
+                    "createOption": "FromImage",
+                    "managedDisk": {
+                      "storageAccountType": "Premium_LRS"
+                    }
+                  }
+                },
+                "networkProfile": {
+                  "networkInterfaces": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('nicName'))]"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('nicName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "vmId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Compute/virtualMachines', parameters('vmName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network')]",
+        "[subscriptionResourceId(parameters('jumpboxSubscriptionId'), 'Microsoft.Resources/deployments', 'deploy-jumpbox-rg')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployWorkspacePrivateLink')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "deploy-fabric-workspace-private-endpoint",
+      "subscriptionId": "[parameters('spokeSubscriptionId')]",
+      "resourceGroup": "[parameters('spokeRgName')]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "privateEndpointName": {
+            "value": "[parameters('fabricWorkspacePrivateEndpointName')]"
+          },
+          "location": {
+            "value": "[parameters('spokeLocation')]"
+          },
+          "subnetId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network'), '2025-04-01').outputs.privateEndpointsSubnetId.value]"
+          },
+          "privateLinkServiceResourceId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-fabric-workspace-private-link-service'), '2025-04-01').outputs.privateLinkServiceId.value]"
+          },
+          "privateDnsZoneIds": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-private-dns'), '2025-04-01').outputs.zoneIds.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.41.2.15936",
+              "templateHash": "18330289819560510965"
+            }
+          },
+          "parameters": {
+            "privateEndpointName": {
+              "type": "string",
+              "metadata": {
+                "description": "Private endpoint name."
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Region for private endpoint."
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID for private endpoint NIC placement."
+              }
+            },
+            "privateLinkServiceResourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of private link service resource."
+              }
+            },
+            "privateDnsZoneIds": {
+              "type": "array",
+              "metadata": {
+                "description": "Private DNS zone IDs for private link integration."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('privateEndpointName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('subnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-workspace', parameters('privateEndpointName'))]",
+                    "properties": {
+                      "privateLinkServiceId": "[parameters('privateLinkServiceResourceId')]",
+                      "groupIds": [
+                        "workspace"
+                      ],
+                      "requestMessage": "Workspace-level Fabric private endpoint connection"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/default', parameters('privateEndpointName'))]",
+              "properties": {
+                "copy": [
+                  {
+                    "name": "privateDnsZoneConfigs",
+                    "count": "[length(parameters('privateDnsZoneIds'))]",
+                    "input": {
+                      "name": "[format('zone-{0}', add(copyIndex('privateDnsZoneConfigs'), 1))]",
+                      "properties": {
+                        "privateDnsZoneId": "[parameters('privateDnsZoneIds')[copyIndex('privateDnsZoneConfigs')]]"
+                      }
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', parameters('privateEndpointName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "privateEndpointId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/privateEndpoints', parameters('privateEndpointName'))]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-fabric-workspace-private-link-service')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-private-dns')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "hubVnetId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('hubSubscriptionId'), parameters('hubRgName')), 'Microsoft.Resources/deployments', 'deploy-hub-network'), '2025-04-01').outputs.vnetId.value]"
+    },
+    "spokeVnetId": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-spoke-network'), '2025-04-01').outputs.vnetId.value]"
+    },
+    "jumpboxVmId": {
+      "type": "string",
+      "value": "[if(parameters('deployJumpbox'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('jumpboxSubscriptionId'), parameters('jumpboxRgName')), 'Microsoft.Resources/deployments', 'deploy-jumpbox'), '2025-04-01').outputs.vmId.value, '')]"
+    },
+    "fabricPrivateEndpointId": {
+      "type": "string",
+      "value": "[if(parameters('deployWorkspacePrivateLink'), reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', parameters('spokeSubscriptionId'), parameters('spokeRgName')), 'Microsoft.Resources/deployments', 'deploy-fabric-workspace-private-endpoint'), '2025-04-01').outputs.privateEndpointId.value, '')]"
+    }
+  }
+}
