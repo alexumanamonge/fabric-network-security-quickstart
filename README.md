@@ -52,18 +52,54 @@ See [docs/architecture.mmd](docs/architecture.mmd).
   - `<your-prefix>-demo-spk-rg`
   - `<your-prefix>-demo-jmp-rg`
 
-## Security first
+## Before you start (important)
 
-- `infra/parameters/demo.bicepparam` contains a password placeholder by default.
-- Replace `jumpboxAdminPassword` with a strong password before deployment, or pass it at deploy time.
-- Do not commit real secrets to source control.
+1. You need an Azure subscription where you can create resource groups, networking, VM, and private endpoint resources.
+2. You need a Microsoft Fabric workspace ID (GUID).
+3. Choose a short custom prefix (for example `contoso-demo`).
+4. Use a strong password for the jumpbox VM.
 
-## Deploy (Azure CLI)
+## Option A (recommended): Deploy with the Azure Portal button
+
+This is the easiest path if you are new to Bicep/Azure IaC.
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Falexumanamonge%2Ffabric-network-security-quickstart%2Fmain%2Finfra%2Fmain.json)
+
+### Portal steps
+
+1. Click the button above.
+2. In Azure Portal, review/enter at least these parameters:
+   - `projectPrefix` = your custom prefix (example: `contoso-demo`)
+   - `hubLocation` and `spokeLocation`
+   - `fabricWorkspaceId` = your Fabric workspace GUID
+   - `jumpboxAdminPassword` = strong password
+3. Select the subscription.
+4. Click **Review + create**, then **Create**.
+
+## Option B: Deploy with Azure CLI
+
+Use this option if you prefer terminal commands.
+
+### Step 1 - Sign in and choose subscription
 
 ```powershell
 az login
 az account set --subscription <subscription-id>
+```
 
+### Step 2 - Update parameter file
+
+Open `infra/parameters/demo.bicepparam` and set:
+
+- `projectPrefix`
+- `fabricWorkspaceId`
+- (Optional) `hubLocation` / `spokeLocation`
+
+Keep `jumpboxAdminPassword` as placeholder in the file and pass the real password in CLI.
+
+### Step 3 - Deploy
+
+```powershell
 az deployment sub create `
   --name <your-prefix>-fabric-net `
   --location eastus `
@@ -72,14 +108,7 @@ az deployment sub create `
   --parameters jumpboxAdminPassword='<strong-password>'
 ```
 
-### Required parameter checks
-
-Before running deployment, verify in `infra/parameters/demo.bicepparam`:
-
-- `fabricWorkspaceId` is set to your Fabric workspace GUID.
-- `hubLocation` and `spokeLocation` are valid for your subscription.
-
-## Validate after deployment
+## Validate deployment
 
 ```powershell
 az deployment sub show --name <your-prefix>-fabric-net --query properties.provisioningState -o tsv
@@ -96,7 +125,7 @@ az network vnet subnet show `
   --query "{subnet:name,natGatewayId:natGateway.id}" -o json
 ```
 
-## Teardown
+## Cleanup
 
 ```powershell
 az deployment sub delete --name <your-prefix>-fabric-net
@@ -105,14 +134,13 @@ az group delete -n <your-prefix>-demo-spk-rg --yes --no-wait
 az group delete -n <your-prefix>-demo-jmp-rg --yes --no-wait
 ```
 
-## Deploy to Azure button (optional)
+## Troubleshooting
 
-Build ARM JSON from Bicep:
-
-```powershell
-az bicep build --file ./infra/main.bicep --outfile ./infra/main.json
-```
-
-Then update `<your-org>` and `<your-repo>`:
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2F<your-org>%2F<your-repo>%2Fmain%2Finfra%2Fmain.json)
+- **Deploy button says template is not publicly accessible**:
+  - The template URL must be `raw.githubusercontent.com` and the repo/branch/path must exist.
+  - This README already points to a public template URL in this repository.
+  - If you fork or rename the repo, update the button URL accordingly.
+- **Deployment fails on Fabric workspace private link**:
+  - Check `fabricWorkspaceId` is a valid workspace GUID in your tenant.
+- **Deployment fails on password requirement**:
+  - Use a stronger `jumpboxAdminPassword` that meets Windows complexity requirements.
