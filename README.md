@@ -59,6 +59,28 @@ See [docs/architecture.mmd](docs/architecture.mmd).
 3. Choose a short custom prefix (for example `contoso-demo`).
 4. Use a strong password for the jumpbox VM.
 
+## Expected deployment time
+
+- Typical end-to-end deployment time: **15 to 30 minutes**.
+- First-time deployments in a subscription can take longer (for example, provider registration delays).
+- If it runs longer than expected, check deployment status in Portal under **Deployments** for your subscription.
+
+## Estimated cost (important)
+
+This quickstart deploys billable resources. For most environments, the biggest cost drivers are:
+
+- Azure Bastion (Basic SKU)
+- Jumpbox VM + managed OS disk
+- NAT Gateway + Standard Public IP
+
+Additional smaller charges may apply for private endpoint and private DNS resources.
+
+To avoid unnecessary charges:
+
+- Run this in a non-production subscription.
+- Delete resources when finished using the **Cleanup** section below.
+- Use the [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) to estimate cost in your regions before deployment.
+
 ## Option A (recommended): Deploy with the Azure Portal button
 
 This is the easiest path if you are new to Bicep/Azure IaC.
